@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Our Data Warehouse
+  postgres:
+    image: postgres:15-alpine
+    container_name: fortress-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fortress-network
+
+networks:
+  fortress-network:
+    driver: bridge
