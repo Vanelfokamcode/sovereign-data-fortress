@@ -67,7 +67,7 @@ This project demonstrates how to build a **production-grade data platform** that
 └─────────────────────────────────────────────────────────┘
 
 # Clone the repository
-git clone https://github.com/TON_USERNAME/sovereign-data-fortress.git
+git clone https://github.com/Vanelfokamcode/sovereign-data-fortress.git
 cd sovereign-data-fortress
 
 # Deploy entire infrastructure (local)
