@@ -1,4 +1,3 @@
-# -sovereign-data-fortress
 # 🏰 Sovereign Data Fortress
 
 > A cloud-agnostic data engineering platform that demonstrates infrastructure sovereignty, cost control, and zero vendor lock-in.
