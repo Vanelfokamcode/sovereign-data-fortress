@@ -1,93 +1,150 @@
-# Makefile - Sovereign Data Fortress Commands
+# Makefile - Sovereign Data Fortress
+# One-command infrastructure management
 
-.PHONY: help tf-init tf-plan tf-apply tf-destroy infra-up infra-down infra-status db-connect minio-console test-minio
+.DEFAULT_GOAL := help
+.PHONY: help setup infra-up infra-down health test-all clean
+
+# Colors for output
+BLUE := \033[0;34m
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+NC := \033[0m # No Color
+
+##@ General Commands
 
 help: ## Show this help message
-	@echo "🏰 Sovereign Data Fortress - Available Commands:"
+	@echo "$(BLUE)🏰 SOVEREIGN DATA FORTRESS$(NC)"
+	@echo "Cloud-Agnostic Data Platform"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make $(BLUE)<target>$(NC)\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-# Terraform Commands
-tf-init: ## Initialize Terraform
-	@echo "🔧 Initializing Terraform..."
-	cd terraform && terraform init
+setup: ## Complete setup (first time only)
+	@echo "$(BLUE)🔧 Running complete setup...$(NC)"
+	@./scripts/setup.sh
+	@echo "$(GREEN)✅ Setup complete!$(NC)"
 
-tf-plan: ## Preview infrastructure changes
-	@echo "📋 Planning infrastructure changes..."
-	cd terraform && terraform plan
+##@ Infrastructure Management
 
-tf-apply: ## Apply infrastructure (create/update)
-	@echo "🚀 Applying infrastructure..."
-	cd terraform && terraform apply
-
-tf-destroy: ## Destroy all infrastructure
-	@echo "💥 Destroying infrastructure..."
-	cd terraform && terraform destroy
-
-# Main Infrastructure Commands
-infra-up: ## Start infrastructure with Terraform
-	@echo "🚀 Starting Sovereign Data Fortress..."
-	@$(MAKE) tf-apply
+infra-up: ## Start all infrastructure
+	@echo "$(BLUE)🚀 Starting infrastructure...$(NC)"
+	@cd terraform && terraform apply -auto-approve
+	@echo "$(GREEN)✅ Infrastructure is running!$(NC)"
 	@echo ""
-	@echo "✅ Infrastructure is up!"
-	@echo "📊 Postgres: localhost:5433"
-	@echo "🗄️  MinIO Console: http://localhost:9001"
-	@echo "🔌 MinIO API: localhost:9000"
+	@echo "Services available at:"
+	@echo "  📊 PostgreSQL:    localhost:5433"
+	@echo "  🗄️  MinIO Console: http://localhost:9001"
+	@echo "  🔌 MinIO API:     localhost:9000"
+	@echo "  ☁️  LocalStack:    http://localhost:4566"
+	@echo ""
+	@echo "Run '$(BLUE)make health$(NC)' to verify all services"
 
 infra-down: ## Stop and remove all infrastructure
-	@echo "🛑 Stopping infrastructure..."
-	@$(MAKE) tf-destroy
+	@echo "$(YELLOW)🛑 Stopping infrastructure...$(NC)"
+	@cd terraform && terraform destroy -auto-approve
+	@echo "$(GREEN)✅ Infrastructure stopped$(NC)"
 
-infra-status: ## Show infrastructure status
-	@echo "📊 Infrastructure Status:"
+infra-status: ## Show current infrastructure status
 	@cd terraform && terraform show
 
-# Service Access Commands
+infra-plan: ## Preview infrastructure changes
+	@cd terraform && terraform plan
+
+##@ Service Access
+
 db-connect: ## Connect to PostgreSQL database
-	@echo "🔌 Connecting to Postgres..."
-	docker exec -it fortress-postgres psql -U dataeng -d warehouse
+	@echo "$(BLUE)🔌 Connecting to PostgreSQL...$(NC)"
+	@docker exec -it fortress-postgres psql -U dataeng -d warehouse
 
-minio-console: ## Open MinIO web console
-	@echo "🗄️  MinIO Console Info:"
-	@echo "URL: http://localhost:9001"
-	@echo "User: minioadmin"
-	@echo "Pass: minioadmin123"
-	@open http://localhost:9001 2>/dev/null || xdg-open http://localhost:9001 2>/dev/null || echo "Open manually: http://localhost:9001"
+minio-console: ## Open MinIO console (browser)
+	@echo "$(BLUE)🗄️  MinIO Console Info:$(NC)"
+	@echo "  URL:  http://localhost:9001"
+	@echo "  User: minioadmin"
+	@echo "  Pass: minioadmin123"
+	@command -v open >/dev/null 2>&1 && open http://localhost:9001 || \
+	 command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:9001 || \
+	 echo "  (Please open manually in browser)"
 
-test-minio: ## Test MinIO S3 API
-	@echo "🧪 Testing MinIO..."
-	python test_minio.py
+duckdb-shell: ## Open DuckDB interactive shell
+	@echo "$(BLUE)🦆 Opening DuckDB shell...$(NC)"
+	@source venv/bin/activate && python3 -c "import duckdb; duckdb.connect().sql('SELECT \\'🏰 Sovereign Data Fortress - DuckDB Ready!\\' as message').show()"
 
-# Docker fallback (legacy)
-docker-up: ## Start with docker-compose (legacy)
-	@echo "⚠️  Using legacy docker-compose. Consider using 'make infra-up' instead."
-	docker-compose up -d
+##@ Testing & Validation
 
-docker-down: ## Stop docker-compose (legacy)
-	docker-compose down
+health: ## Run health check on all services
+	@./scripts/health_check.sh
 
+test-all: ## Run comprehensive test suite
+	@./scripts/test_all.sh
 
+test-minio: ## Test MinIO S3 operations
+	@echo "$(BLUE)🧪 Testing MinIO...$(NC)"
+	@source venv/bin/activate && python test_minio.py
 
-# LocalStack Commands
-localstack-health: ## Check LocalStack health
-	@echo "🔍 Checking LocalStack health..."
-	curl -s http://localhost:4566/_localstack/health | python3 -m json.tool
+test-localstack: ## Test LocalStack AWS simulation
+	@echo "$(BLUE)🧪 Testing LocalStack...$(NC)"
+	@source venv/bin/activate && python test_localstack.py
 
-localstack-s3-list: ## List all S3 buckets in LocalStack
-	@echo "🪣 S3 Buckets in LocalStack:"
-	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
-	aws --endpoint-url=http://localhost:4566 s3 ls
+test-duckdb: ## Run DuckDB analytics demo
+	@echo "$(BLUE)🦆 Running DuckDB demo...$(NC)"
+	@source venv/bin/activate && python analytics/duckdb_demo.py
 
-test-localstack: ## Run LocalStack AWS simulation tests
-	@echo "🧪 Testing LocalStack..."
-	python test_localstack.py
+##@ Development
 
+logs: ## Show logs from all containers
+	@docker compose logs -f 2>/dev/null || docker logs fortress-postgres fortress-minio fortress-localstack -f
 
-# DuckDB Analytics Commands
-analytics-demo: ## Run DuckDB analytics demo
-	@echo "🦆 Running DuckDB Analytics Demo..."
-	source venv/bin/activate && python analytics/duckdb_demo.py
+shell: ## Activate Python virtual environment
+	@echo "$(BLUE)🐍 Activating virtual environment...$(NC)"
+	@echo "Run: source venv/bin/activate"
 
-analytics-shell: ## Open DuckDB interactive shell
-	@echo "🦆 Opening DuckDB shell..."
-	source venv/bin/activate && python3 -c "import duckdb; duckdb.sql('SELECT 42 as answer').show()"
+format: ## Format Python code
+	@echo "$(BLUE)🎨 Formatting Python code...$(NC)"
+	@source venv/bin/activate && black *.py analytics/ 2>/dev/null || echo "Install black: pip install black"
+
+##@ Cleanup
+
+clean: ## Remove generated files and caches
+	@echo "$(YELLOW)🧹 Cleaning up...$(NC)"
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@echo "$(GREEN)✅ Cleanup complete$(NC)"
+
+clean-data: ## Remove all data (WARNING: irreversible!)
+	@echo "$(YELLOW)⚠️  WARNING: This will delete all data!$(NC)"
+	@read -p "Are you sure? (y/N) " -n 1 -r; \
+	echo ""; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf data/*; \
+		echo "$(GREEN)✅ Data removed$(NC)"; \
+	else \
+		echo "Cancelled"; \
+	fi
+
+reset: clean infra-down ## Full reset (stop infra + clean)
+	@echo "$(GREEN)✅ Full reset complete$(NC)"
+
+##@ Documentation
+
+docs: ## Generate project documentation
+	@echo "$(BLUE)📚 Documentation:$(NC)"
+	@echo "  README.md       - Main documentation"
+	@echo "  terraform/      - Infrastructure code"
+	@echo "  analytics/      - DuckDB analytics"
+	@echo "  scripts/        - Automation scripts"
+
+demo: ## Quick demo of the entire platform
+	@echo "$(BLUE)🎬 SOVEREIGN DATA FORTRESS - Quick Demo$(NC)"
+	@echo "==========================================="
+	@echo ""
+	@echo "$(YELLOW)Step 1: Starting infrastructure...$(NC)"
+	@make infra-up
+	@echo ""
+	@echo "$(YELLOW)Step 2: Running health checks...$(NC)"
+	@make health
+	@echo ""
+	@echo "$(YELLOW)Step 3: Running tests...$(NC)"
+	@make test-all
+	@echo ""
+	@echo "$(GREEN)🎉 Demo complete!$(NC)"
+	@echo "Your cloud-agnostic data platform is operational."
