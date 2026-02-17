@@ -34,3 +34,15 @@ output "containers_status" {
     minio    = docker_container.minio.name
   }
 }
+
+# Ajoute à la fin de outputs.tf
+
+output "localstack_endpoint" {
+  description = "LocalStack AWS endpoint"
+  value       = "http://localhost:${var.localstack_port}"
+}
+
+output "aws_simulation_services" {
+  description = "Simulated AWS services"
+  value       = var.aws_services
+}

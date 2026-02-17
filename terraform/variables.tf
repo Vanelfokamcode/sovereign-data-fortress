@@ -54,3 +54,18 @@ variable "minio_console_port" {
   type        = number
   default     = 9001
 }
+
+
+# Ajoute à la fin de variables.tf
+
+variable "localstack_port" {
+  description = "LocalStack main port"
+  type        = number
+  default     = 4566
+}
+
+variable "aws_services" {
+  description = "AWS services to simulate in LocalStack"
+  type        = list(string)
+  default     = ["s3", "lambda", "sqs", "iam", "cloudwatch"]
+}

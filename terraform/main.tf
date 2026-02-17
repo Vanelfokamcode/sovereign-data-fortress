@@ -119,3 +119,38 @@ resource "docker_container" "minio" {
     value = var.project_name
   }
 }
+
+# LocalStack Container (AWS Simulation)
+resource "docker_image" "localstack" {
+  name = "localstack/localstack:latest"
+}
+
+resource "docker_container" "localstack" {
+  name  = "${var.project_name}-localstack"
+  image = docker_image.localstack.image_id
+
+  env = [
+    "SERVICES=s3,sqs",
+    "DEBUG=1",
+    "AWS_DEFAULT_REGION=us-east-1",
+    "AWS_ACCESS_KEY_ID=test",
+    "AWS_SECRET_ACCESS_KEY=test",
+    "LOCALSTACK_HOST=localhost"
+  ]
+
+  ports {
+    internal = 4566
+    external = var.localstack_port
+  }
+
+  networks_advanced {
+    name = docker_network.fortress_network.name
+  }
+
+  restart = "on-failure"
+
+  labels {
+    label = "project"
+    value = var.project_name
+  }
+}

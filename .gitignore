@@ -235,3 +235,5 @@ terraform/*.tfvars
 terraform/.terraform/
 terraform/.terraform.lock.hcl
 terraform/terraform.tfstate*
+venv/
+__pycache__/

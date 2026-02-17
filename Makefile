@@ -65,3 +65,19 @@ docker-up: ## Start with docker-compose (legacy)
 
 docker-down: ## Stop docker-compose (legacy)
 	docker-compose down
+
+
+
+# LocalStack Commands
+localstack-health: ## Check LocalStack health
+	@echo "🔍 Checking LocalStack health..."
+	curl -s http://localhost:4566/_localstack/health | python3 -m json.tool
+
+localstack-s3-list: ## List all S3 buckets in LocalStack
+	@echo "🪣 S3 Buckets in LocalStack:"
+	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
+	aws --endpoint-url=http://localhost:4566 s3 ls
+
+test-localstack: ## Run LocalStack AWS simulation tests
+	@echo "🧪 Testing LocalStack..."
+	python test_localstack.py
