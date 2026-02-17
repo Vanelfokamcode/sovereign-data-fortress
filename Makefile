@@ -81,3 +81,13 @@ localstack-s3-list: ## List all S3 buckets in LocalStack
 test-localstack: ## Run LocalStack AWS simulation tests
 	@echo "🧪 Testing LocalStack..."
 	python test_localstack.py
+
+
+# DuckDB Analytics Commands
+analytics-demo: ## Run DuckDB analytics demo
+	@echo "🦆 Running DuckDB Analytics Demo..."
+	source venv/bin/activate && python analytics/duckdb_demo.py
+
+analytics-shell: ## Open DuckDB interactive shell
+	@echo "🦆 Opening DuckDB shell..."
+	source venv/bin/activate && python3 -c "import duckdb; duckdb.sql('SELECT 42 as answer').show()"
