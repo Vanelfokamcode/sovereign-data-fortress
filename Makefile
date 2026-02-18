@@ -148,3 +148,9 @@ demo: ## Quick demo of the entire platform
 	@echo ""
 	@echo "$(GREEN)🎉 Demo complete!$(NC)"
 	@echo "Your cloud-agnostic data platform is operational."
+
+
+
+test-contracts: ## Test data contract validation
+	@echo "🔒 Testing Data Contracts..."
+	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python data_contracts/validators/contract_validator.py

@@ -1,3 +1,4 @@
+annotated-types==0.7.0
 argon2-cffi==25.1.0
 argon2-cffi-bindings==25.1.0
 awscli-local==0.22.2
@@ -14,9 +15,12 @@ pandas==3.0.0
 pyarrow==23.0.1
 pycparser==3.0
 pycryptodome==3.23.0
+pydantic==2.12.5
+pydantic_core==2.41.5
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 s3transfer==0.16.0
 six==1.17.0
+typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
