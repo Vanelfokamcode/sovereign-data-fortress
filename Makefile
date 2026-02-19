@@ -154,3 +154,19 @@ demo: ## Quick demo of the entire platform
 test-contracts: ## Test data contract validation
 	@echo "🔒 Testing Data Contracts..."
 	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python data_contracts/validators/contract_validator.py
+
+
+
+##@ Data Ingestion
+
+ingest: ## Run data ingestion pipeline
+	@echo "🚀 Running ingestion pipeline..."
+	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python ingestion/pipeline.py
+
+test-source: ## Test source connector
+	@echo "🔌 Testing source connector..."
+	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python ingestion/connectors/crypto_api.py
+
+test-destination: ## Test destination connector
+	@echo "📦 Testing destination connector..."
+	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python ingestion/connectors/minio_destination.py
