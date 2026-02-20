@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw data loaded from MinIO
+    schema: raw
+    tables:
+      - name: crypto_prices
+        description: Cryptocurrency prices from CoinGecko API
+        columns:
+          - name: id
+            description: Cryptocurrency ID
+            tests:
+              - not_null
+          
+          - name: symbol
+            description: Trading symbol
+            tests:
+              - not_null
+          
+          - name: current_price
+            description: Current price in USD
+            tests:
+              - not_null
