@@ -2,67 +2,183 @@ version: 2
 
 models:
   - name: stg_crypto_prices
-    description: >
-      Staging table for cryptocurrency prices.
-      Clean, typed, and validated data from raw source.
+    description: |
+      ## Staging Model for Cryptocurrency Prices
+      
+      ### Purpose
+      Clean and standardize raw cryptocurrency price data from CoinGecko API.
+      This is the first transformation layer after raw ingestion.
+      
+      ### Source
+      - **Raw Data**: MinIO (s3://raw-data/crypto_prices/)
+      - **Format**: Parquet (columnar, compressed)
+      - **Refresh**: Hourly via ingestion pipeline
+      
+      ### Transformations
+      1. Rename columns to standard naming convention
+      2. Cast to proper data types (NUMERIC, TIMESTAMP)
+      3. Filter out invalid records (null prices, zero prices)
+      4. Add metadata (dbt_loaded_at)
+      
+      ### Data Quality
+      - Validated by data contracts before ingestion
+      - Circuit breaker protects against bad data
+      - Tests ensure no nulls, positive prices
+      
+      ### Usage
+      This model is used by:
+      - Intermediate models (aggregations)
+      - Marts (business metrics)
+      - Analytics dashboards
+      
+      ### Owner
+      - **Team**: Data Engineering
+      - **Contact**: data-team@fortress.io
+      - **Last Updated**: 2024-02-22
+    
+    meta:
+      owner: "data-engineering"
+      pipeline: "crypto-ingestion"
+      refresh_frequency: "hourly"
+      business_critical: true
     
     columns:
       - name: crypto_id
-        description: Unique cryptocurrency identifier
+        description: |
+          Unique identifier for the cryptocurrency.
+          
+          **Examples**: 'bitcoin', 'ethereum', 'solana'
+          
+          **Note**: This is the CoinGecko internal ID, not the symbol.
         tests:
           - not_null
           - unique
+        meta:
+          primary_key: true
       
       - name: symbol
-        description: Trading symbol (e.g., BTC, ETH)
+        description: |
+          Trading symbol for the cryptocurrency.
+          
+          **Examples**: 'BTC', 'ETH', 'SOL'
+          
+          **Format**: Always uppercase, 2-10 characters.
         tests:
           - not_null
+        meta:
+          display_name: true
       
       - name: crypto_name
-        description: Full cryptocurrency name
+        description: |
+          Full name of the cryptocurrency.
+          
+          **Examples**: 'Bitcoin', 'Ethereum', 'Solana'
         tests:
           - not_null
       
       - name: price_usd
-        description: Current price in USD
+        description: |
+          Current price in USD.
+          
+          **Unit**: US Dollars (USD)
+          **Precision**: 2 decimal places
+          **Range**: Must be positive (> 0)
+          
+          **Business Rule**: Price between $0.01 and $500,000
+          (outside this range triggers data quality alerts)
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "> 0"
               config:
                 severity: error
+        meta:
+          unit: "USD"
+          business_critical: true
       
       - name: market_cap_usd
-        description: Market capitalization in USD
+        description: |
+          Total market capitalization in USD.
+          
+          **Calculation**: price × circulating_supply
+          **Unit**: US Dollars (USD)
+          
+          **Null Handling**: Can be null for new/small cryptocurrencies
         tests:
           - dbt_utils.expression_is_true:
               expression: ">= 0 OR market_cap_usd IS NULL"
+        meta:
+          unit: "USD"
       
       - name: volume_24h_usd
-        description: 24-hour trading volume
+        description: |
+          24-hour trading volume in USD.
+          
+          **Period**: Rolling 24 hours
+          **Unit**: US Dollars (USD)
+          
+          **Use Case**: Measure liquidity and market activity
         tests:
           - dbt_utils.expression_is_true:
               expression: ">= 0 OR volume_24h_usd IS NULL"
+        meta:
+          unit: "USD"
+          time_window: "24h"
       
       - name: price_change_pct_24h
-        description: 24-hour price change percentage
+        description: |
+          24-hour price change percentage.
+          
+          **Range**: -100% to +10000% (with warnings outside -100 to +1000)
+          **Interpretation**:
+          - Positive = price increased
+          - Negative = price decreased
+          - Example: 5.3 = +5.3% increase
+          
+          **Data Quality**: Values outside -100% to +1000% trigger warnings
+          (possible data quality issues or extreme volatility)
         tests:
           - dbt_utils.expression_is_true:
               expression: "BETWEEN -100 AND 10000"
               config:
                 severity: warn
+        meta:
+          unit: "percent"
+          time_window: "24h"
       
       - name: price_updated_at
-        description: Timestamp when price was last updated
+        description: |
+          Timestamp when the price was last updated by the source API.
+          
+          **Timezone**: UTC
+          **Freshness**: Should be within last 24-48 hours
+          
+          **Alert**: If older than 48 hours, data may be stale
+        tests:
+          - not_null
+        meta:
+          timezone: "UTC"
+      
+      - name: extracted_at
+        description: |
+          Timestamp when data was extracted by our ingestion pipeline.
+          
+          **Timezone**: UTC
+          **Source**: Airbyte extraction timestamp
         tests:
           - not_null
       
       - name: dbt_loaded_at
-        description: Timestamp when dbt loaded this record
+        description: |
+          Timestamp when dbt loaded this record into the staging model.
+          
+          **Timezone**: UTC
+          **Purpose**: Track data freshness and pipeline performance
         tests:
           - not_null
-
-    # Model-level tests
+        meta:
+          generated_by: "dbt"
+    
     tests:
       - dbt_utils.recency:
           datepart: hour

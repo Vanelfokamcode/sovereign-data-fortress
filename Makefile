@@ -186,3 +186,24 @@ dbt-test-data: ## Run only data tests
 dbt-test-source: ## Test source data quality
 	@echo "🧪 Testing source data..."
 	@cd dbt_fortress && dbt test --select source:*
+
+##@ Pipeline Monitoring
+
+monitor-circuits: ## Show circuit breaker status
+	@echo "📊 Monitoring circuit breakers..."
+	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python pipeline_monitoring/dashboard.py
+
+test-circuit-breaker: ## Demo circuit breaker functionality
+	@echo "🧪 Testing circuit breaker..."
+	@source venv/bin/activate && python pipeline_monitoring/circuit_breaker.py
+
+dbt-docs-generate: ## Generate dbt documentation
+	@echo "📚 Generating dbt documentation..."
+	@cd dbt_fortress && dbt docs generate
+
+dbt-docs-serve: ## Serve dbt documentation (browser)
+	@echo "📚 Serving dbt docs at http://localhost:8080"
+	@echo "Press Ctrl+C to stop"
+	@cd dbt_fortress && dbt docs serve --port 8080
+
+dbt-docs: dbt-docs-generate dbt-docs-serve ## Generate and serve dbt docs

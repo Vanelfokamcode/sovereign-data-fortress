@@ -2,23 +2,104 @@ version: 2
 
 sources:
   - name: raw
-    description: Raw data loaded from MinIO
+    description: |
+      ## Raw Data Layer
+      
+      Data loaded from external sources via ingestion pipelines.
+      Stored in PostgreSQL `raw` schema after extraction from MinIO.
+      
+      ### Data Flow
+      1. API (CoinGecko) → Ingestion Pipeline
+      2. Ingestion → MinIO (Parquet files)
+      3. Load Script → PostgreSQL (raw schema)
+      4. dbt → Transforms into staging/marts
+      
+      ### Refresh Schedule
+      - **Frequency**: Hourly
+      - **Method**: Full refresh (replace all data)
+      - **Pipeline**: crypto-ingestion
+      
+      ### Data Quality
+      - Protected by circuit breakers
+      - Validated by data contracts
+      - Monitored for freshness
+    
     schema: raw
+    
+    meta:
+      owner: "data-engineering"
+      contains_pii: false
+      data_classification: "public"
+    
     tables:
       - name: crypto_prices
-        description: Cryptocurrency prices from CoinGecko API
+        description: |
+          Raw cryptocurrency price data from CoinGecko API.
+          
+          ### API Source
+          - **Provider**: CoinGecko
+          - **Endpoint**: /coins/markets
+          - **Documentation**: https://www.coingecko.com/en/api
+          
+          ### Data Characteristics
+          - **Update Frequency**: Real-time (we pull hourly)
+          - **Historical Data**: Not available in this table (current snapshot only)
+          - **Coverage**: Top cryptocurrencies by market cap
+          
+          ### Known Issues
+          - Some smaller cryptos may have null market_cap
+          - Price can be briefly stale during API maintenance
+          - Rate limits: 50 calls/minute (managed by ingestion)
+          
+          ### SLA
+          - **Freshness**: < 2 hours
+          - **Completeness**: > 95% of expected cryptos
+          - **Accuracy**: ± 0.1% vs actual exchange prices
+        
+        loaded_at_field: _airbyte_extracted_at
+        
+        freshness:
+          warn_after: {count: 2, period: hour}
+          error_after: {count: 24, period: hour}
+        
+        meta:
+          external_source: "CoinGecko API"
+          api_version: "v3"
+          ingestion_tool: "custom-pipeline"
+        
         columns:
           - name: id
-            description: Cryptocurrency ID
+            description: CoinGecko internal cryptocurrency ID
+            tests:
+              - not_null
+              - unique
+          
+          - name: symbol
+            description: Trading symbol (e.g., BTC, ETH)
             tests:
               - not_null
           
-          - name: symbol
-            description: Trading symbol
-            tests:
-              - not_null
+          - name: name
+            description: Full cryptocurrency name
           
           - name: current_price
             description: Current price in USD
+            tests:
+              - not_null
+          
+          - name: market_cap
+            description: Market capitalization in USD
+          
+          - name: total_volume
+            description: 24h trading volume in USD
+          
+          - name: price_change_24h
+            description: 24h price change percentage
+          
+          - name: last_updated
+            description: API timestamp of last price update
+          
+          - name: _airbyte_extracted_at
+            description: Pipeline extraction timestamp
             tests:
               - not_null
