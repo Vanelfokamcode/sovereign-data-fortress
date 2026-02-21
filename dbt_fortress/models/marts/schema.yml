@@ -1,0 +1,92 @@
+version: 2
+
+models:
+  - name: fct_daily_crypto_prices
+    description: |
+      Daily cryptocurrency price fact table with OHLC data.
+      
+      **Grain**: One row per cryptocurrency per day
+      **Refresh**: Daily after staging data loads
+      **Usage**: Primary table for price analysis and dashboards
+    
+    columns:
+      - name: crypto_key
+        description: Surrogate key to dim_crypto
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_crypto')
+              field: crypto_key
+      
+      - name: date_key
+        description: Surrogate key to dim_date
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      
+      - name: price_open
+        description: Opening price for the day (first recorded)
+        tests:
+          - not_null
+      
+      - name: price_close
+        description: Closing price for the day (last recorded)
+        tests:
+          - not_null
+      
+      - name: price_high
+        description: Highest price during the day
+      
+      - name: price_low
+        description: Lowest price during the day
+      
+      - name: volatility_pct
+        description: Daily volatility as percentage of average price
+  
+  - name: dim_crypto
+    description: |
+      Cryptocurrency dimension table.
+      
+      **Type**: Slowly Changing Dimension (SCD Type 1)
+      **Grain**: One row per cryptocurrency
+    
+    columns:
+      - name: crypto_key
+        description: Surrogate key (primary key)
+        tests:
+          - unique
+          - not_null
+      
+      - name: crypto_id
+        description: Natural key from CoinGecko
+        tests:
+          - unique
+          - not_null
+      
+      - name: symbol
+        description: Trading symbol
+      
+      - name: category
+        description: Cryptocurrency category
+  
+  - name: dim_date
+    description: |
+      Calendar dimension table.
+      
+      **Grain**: One row per date
+      **Range**: Last year + next month
+    
+    columns:
+      - name: date_key
+        description: Surrogate key (YYYYMMDD format)
+        tests:
+          - unique
+          - not_null
+      
+      - name: date
+        description: Actual date
+        tests:
+          - unique
+          - not_null
