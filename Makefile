@@ -170,3 +170,19 @@ test-source: ## Test source connector
 test-destination: ## Test destination connector
 	@echo "📦 Testing destination connector..."
 	@source venv/bin/activate && export PYTHONPATH="$${PYTHONPATH}:$(shell pwd)" && python ingestion/connectors/minio_destination.py
+
+dbt-test-all: ## Run all dbt tests (comprehensive)
+	@echo "🧪 Running comprehensive dbt tests..."
+	@cd dbt_fortress && dbt test
+
+dbt-test-schema: ## Run only schema tests
+	@echo "🧪 Running schema tests..."
+	@cd dbt_fortress && dbt test --select test_type:schema
+
+dbt-test-data: ## Run only data tests
+	@echo "🧪 Running data tests..."
+	@cd dbt_fortress && dbt test --select test_type:data
+
+dbt-test-source: ## Test source data quality
+	@echo "🧪 Testing source data..."
+	@cd dbt_fortress && dbt test --select source:*
