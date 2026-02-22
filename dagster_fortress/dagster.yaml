@@ -1,0 +1,16 @@
+# dagster_fortress/dagster.yaml
+storage:
+  postgres:
+    postgres_db:
+      username: dataeng
+      password: fortress2024
+      hostname: localhost
+      db_name: warehouse
+      port: 5433
+
+run_launcher:
+  module: dagster.core.launcher
+  class: DefaultRunLauncher
+
+telemetry:
+  enabled: false

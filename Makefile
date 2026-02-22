@@ -207,3 +207,18 @@ dbt-docs-serve: ## Serve dbt documentation (browser)
 	@cd dbt_fortress && dbt docs serve --port 8080
 
 dbt-docs: dbt-docs-generate dbt-docs-serve ## Generate and serve dbt docs
+
+##@ Dagster Orchestration
+
+dagster-dev: ## Start Dagster development server
+	@echo "🚀 Starting Dagster..."
+	@echo "UI will be available at http://localhost:3000"
+	@cd dagster_fortress && dagster dev
+
+dagster-assets: ## List all Dagster assets
+	@echo "📦 Dagster Assets:"
+	@cd dagster_fortress && dagster asset list
+
+dagster-materialize: ## Materialize all assets (CLI)
+	@echo "🔨 Materializing all assets..."
+	@cd dagster_fortress && dagster asset materialize --select '*'

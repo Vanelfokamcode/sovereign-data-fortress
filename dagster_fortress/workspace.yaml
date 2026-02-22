@@ -1,0 +1,5 @@
+# dagster_fortress/workspace.yaml
+load_from:
+  - python_file:
+      relative_path: __init__.py
+      working_directory: .
