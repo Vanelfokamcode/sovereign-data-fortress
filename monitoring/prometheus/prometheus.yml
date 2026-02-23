@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring (ça marche)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Dagster metrics exporter (on va l'ajouter plus tard)
+  # - job_name: 'dagster-exporter'
+  #   static_configs:
+  #     - targets: ['dagster-exporter:8000']

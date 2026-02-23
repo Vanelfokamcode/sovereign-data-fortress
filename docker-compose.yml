@@ -1,46 +1,69 @@
+# docker-compose.yml
 version: '3.8'
 
 services:
-  # PostgreSQL - Our Data Warehouse
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: fortress-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-dataeng}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fortress2024}
+      POSTGRES_DB: ${POSTGRES_DB:-warehouse}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dataeng}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - fortress-network
- # MinIO - S3-Compatible Object Storage
+
   minio:
     image: minio/minio:latest
     container_name: fortress-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     ports:
-      - "${MINIO_API_PORT}:9000"      # API port
-      - "${MINIO_CONSOLE_PORT}:9001"  # Web UI port
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - ./data/minio:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
     networks:
       - fortress-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fortress-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - ./data/prometheus:/prometheus
+    networks:
+      - fortress-network
+    restart: unless-stopped
 
 networks:
   fortress-network:
     driver: bridge
+
+  dagster-exporter:
+    build:
+      context: ./monitoring/exporters
+      dockerfile: Dockerfile
+    container_name: fortress-dagster-exporter
+    ports:
+      - "8000:8000"
+    networks:
+      - fortress-network
+    restart: unless-stopped

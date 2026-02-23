@@ -2,6 +2,7 @@
 from dagster import (
     Definitions,
     load_assets_from_modules,
+    load_asset_checks_from_modules,
     define_asset_job,
     AssetSelection
 )
@@ -15,6 +16,11 @@ from dagster_fortress.assets import (
     partitioned_assets,
     documentation_assets,
     metrics_assets
+)
+from dagster_fortress.checks import (
+    ingestion_checks,
+    transformation_checks,
+    business_checks
 )
 from dagster_fortress.schedules import daily_schedules, partitioned_schedules
 from dagster_fortress.sensors import (
@@ -30,7 +36,7 @@ from dagster_dbt import DbtCliResource
 DBT_PROJECT_DIR = Path(__file__).parent.parent / "dbt_fortress"
 DBT_PROFILES_DIR = Path.home() / ".dbt"
 
-# Load all assets
+# Load assets
 all_asset_modules = [
     ingestion_assets,
     dbt_assets,
@@ -45,23 +51,22 @@ all_assets = []
 for module in all_asset_modules:
     all_assets.extend(load_assets_from_modules([module]))
 
+# Load asset checks
+all_check_modules = [
+    ingestion_checks,
+    transformation_checks,
+    business_checks
+]
+
+all_checks = []
+for module in all_check_modules:
+    all_checks.extend(load_asset_checks_from_modules([module]))
+
 # Jobs
 full_pipeline_job = define_asset_job(
     name="full_pipeline",
     selection=AssetSelection.all(),
-    description="Complete end-to-end pipeline"
-)
-
-daily_partition_job = define_asset_job(
-    name="daily_partition_job",
-    selection=AssetSelection.groups("partitioned"),
-    description="Process daily partitions"
-)
-
-observability_job = define_asset_job(
-    name="observability_job",
-    selection=AssetSelection.groups("observability"),
-    description="Update observability metrics"
+    description="Complete pipeline with quality checks"
 )
 
 # Schedules
@@ -99,7 +104,8 @@ resources = {
 # Definitions
 defs = Definitions(
     assets=all_assets,
-    jobs=[full_pipeline_job, daily_partition_job, observability_job],
+    asset_checks=all_checks,
+    jobs=[full_pipeline_job],
     schedules=all_schedules,
     sensors=all_sensors,
     resources=resources
