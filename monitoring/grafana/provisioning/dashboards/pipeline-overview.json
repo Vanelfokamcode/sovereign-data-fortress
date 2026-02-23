@@ -1,0 +1,110 @@
+{
+  "dashboard": {
+    "title": "Sovereign Data Fortress - Pipeline Overview",
+    "tags": ["fortress", "pipeline"],
+    "timezone": "browser",
+    "editable": true,
+    "hideControls": false,
+    "graphTooltip": 1,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Prometheus Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "up{job=\"prometheus\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "text": {},
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {"text": "DOWN", "color": "red"},
+                  "1": {"text": "UP", "color": "green"}
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 1, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Monitoring System Info",
+        "type": "text",
+        "gridPos": {"h": 4, "w": 18, "x": 6, "y": 0},
+        "options": {
+          "mode": "markdown",
+          "content": "# 🏰 Sovereign Data Fortress\n\n**Monitoring Stack:**\n- Prometheus: Metrics collection\n- Grafana: Visualization\n\n**Status:** All systems operational ✅\n\n*Dashboard auto-refreshes every 5 seconds*"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Prometheus Metrics",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 4},
+        "targets": [
+          {
+            "expr": "prometheus_tsdb_head_samples",
+            "refId": "A",
+            "legendFormat": "Samples in Memory"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10
+            },
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        }
+      }
+    ],
+    "refresh": "5s",
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+    },
+    "schemaVersion": 36,
+    "version": 1
+  },
+  "overwrite": true
+}
